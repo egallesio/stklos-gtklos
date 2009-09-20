@@ -1,0 +1,171 @@
+;;;;
+;;;; scale.stk				-- GTklos Scale Widget
+;;;; 
+;;;; Copyright © 2001-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date:  1-Aug-2001 07:58 (eg)
+;;;; Last file update: 10-May-2009 22:38 (eg)
+;;;;
+
+
+(define-class <gtk-adjustment>  (<gtk-widget>)
+  ((lower 		:accessor 	lower
+			:init-keyword	:lower
+			:allocation	:gtk-property)
+   (upper	 	:accessor 	upper
+			:init-keyword	:to
+			:allocation	:gtk-property)
+   (step-increment	:accessor	step-increment
+			:init-keyword	:step-increment
+			:allocation	:gtk-property)
+   (page-increment	:accessor	page-increment
+			:init-keyword	:page-increment
+			:allocation	:gtk-property)
+   (page-size		:accessor	page-size
+			:init-keyword	:page-size
+			:allocation	:gtk-property)
+   (value		:accessor	value
+			:init-keyword	:value
+			:allocation	:gtk-property)
+   (command		:accessor	command
+			:init-keyword   :command
+			:allocation	:virtual
+			:slot-ref	(%event-getter-func "value-changed")
+			:slot-set!	(%event-setter-func "value-changed"))))
+
+
+(define-method realize-widget ((self <gtk-adjustment>) initargs)
+  (let ((v (gtk-adjustment-new 0.0 	; value
+			       0.0 1.0 	; min max
+			       0.1 0.0  ; step-incr page-incr
+			       0.0)))	; page-size
+    (cpointer-type-set! v 'gtk-adjustement)
+    (slot-set! self 'wid v)))
+
+(define (%make-adjustement-getter name)
+  (lambda (o)
+    (let ((adj (slot-ref o '%adj)))
+      (and adj (slot-ref adj name)))))
+
+(define (%make-adjustement-setter name)
+  (lambda (o v)
+    (let ((adj (slot-ref o '%adj)))
+      (and adj (slot-set! adj name v)))))
+
+;======================================================================
+;
+;			     < S c a l e >
+;
+;====================================================================== 
+(define-class <scale> (<gtk-widget>)
+  ((%adj)	  ;; The widget adjustment
+   (digits	  :accessor 	digits
+		  :init-keyword	:digits
+		  :allocation	:gtk-property)
+   (orientation	  :getter	orientation
+		  :allocation	:virtual
+		  :slot-ref	(lambda (o)
+				  (let ((type (cpointer-type (wid o))))
+				    (if (eq? type 'gtk-hscale)
+					'horizontal
+					'vertical)))
+		 :slot-set!	(gtklos-slot-is-ro 'orientation))
+   (from	 :accessor	from
+		 :init-keyword	:from
+		 :allocation	:virtual
+		 :slot-ref	(%make-adjustement-getter 'lower)
+		 :slot-set!	(%make-adjustement-setter 'lower))
+   (to		 :accessor	to
+		 :init-keyword	:to
+		 :allocation	:virtual
+		 :slot-ref	(%make-adjustement-getter 'upper)
+		 :slot-set!	(%make-adjustement-setter 'upper))
+   (value	 :accessor	value
+		 :init-keyword	:value
+		 :allocation	:virtual
+		 :slot-ref	(%make-adjustement-getter 'value)
+		 :slot-set!	(%make-adjustement-setter 'value))
+   (increment	 :accessor	increment
+		 :init-keyword	:increment
+		 :allocation	:virtual
+		 :slot-ref	(%make-adjustement-getter 'step-increment)
+		 :slot-set!	(%make-adjustement-setter 'step-increment))
+   (command	 :accessor	command
+		 :init-keyword	:command
+		 :allocation	:virtual
+		 :slot-ref	(%make-adjustement-getter 'command)
+		 :slot-set!	(%make-adjustement-setter 'command))
+   (show-value   :accessor	show-value
+		  :init-keyword	:show-value
+		  :allocation	:gtk-property
+		  :gtk-name	"draw_value")
+   (value-pos	  :accessor	value-pos
+		  :init-keyword :value-pos
+		  :allocation	:virtual
+		  :slot-ref 	(lambda (o)
+				  (%widget-data-get o :value-pos 'top))
+		  :slot-set!	(lambda (o v)
+				  (let ((val (case v
+					       ((left)   0)
+					       ((right)  1)
+					       ((top)    2)
+					       (else	 3))))
+				    (%widget-data-get o :value-pos val)
+				    (gtk-scale-set-value-pos (wid o) val))))))
+
+
+(define-method realize-widget ((self <scale>) initargs)
+  (let* ((o   (key-get initargs :orientation 'horizontal))
+	 (adj (make <gtk-adjustment> :show #f))
+	 (s   (case o
+		((horizontal) (gtk-hscale-new (wid adj)))
+		((vertical)   (gtk-vscale-new (wid adj)))
+		(else 	   (error "bad scale orientation ~S" o)))))
+    ;; Keep a reference on the adjustment
+    (slot-set! self '%adj adj)
+    ;; Normal stuff
+    (cpointer-type-set! s (if (eq? o 'vertical) 'gtk-vscale 'gtk-hscale))
+    (slot-set! self 'wid s)
+    self))
+  
+
+
+;======================================================================
+;
+;	              C l a s s    < h s c a l e >
+;
+;======================================================================
+(define-class <hscale> (<scale>)
+  ())
+ 
+(define-method realize-widget ((self <hscale>) initargs)
+  (next-method self (list* :orientation 'horizontal initargs)))
+
+ 
+;======================================================================
+;
+;	              C l a s s    < v s c a l e >
+;
+;====================================================================== 
+(define-class <vscale> (<scale>)
+  ())
+ 
+(define-method realize-widget ((self <vscale>) initargs)
+  (next-method self (list* :orientation 'vertical initargs)))

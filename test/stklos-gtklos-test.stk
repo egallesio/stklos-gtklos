@@ -1,0 +1,24 @@
+;;; Test for ScmPkg package stklos-gtklos
+;;;
+;;;           Author: Erick Gallesio [eg@essi.fr]
+;;;    Creation date: 11-Aug-2007 12:12 (eg)
+;;; Last file update: 20-Sep-2009 00:25 (eg)
+;;;
+
+;; ----------------------------------------------------------------------
+;;	run ...
+;; ----------------------------------------------------------------------
+(define (run names)
+  (let* ((w   (make <window> :title "Small Test"))
+	 (box (make <vbox> :parent w :expand #t :fill 'both))
+	 (b1  (make <button> :text "Say Hello" :parent box
+		    :command (lambda (e) (eprintf "Hello!!!\n"))))
+	 (b2  (make <button> :text "Launch GTklos demos" :parent box
+		    :command (lambda (e)
+			       (system "cd stklos-gtklos/stklos/examples; ./demos &"))))
+	 (b3  (make <button> :text "Quit" :parent box
+		   :command (lambda (e)
+			      (eprintf "Exit\n")
+			      (exit 0)))))
+    (gtk-main)))
+

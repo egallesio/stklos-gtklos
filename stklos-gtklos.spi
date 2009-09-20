@@ -1,0 +1,344 @@
+;;;;
+;;;; stklos-gtklos.spi	-- GTklos package
+;;;; 
+;;;; Copyright © 2007-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@essi.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@essi.fr]
+;;;;    Creation date:  7-Aug-2007 18:33 (eg)
+;;;; Last file update: 19-Sep-2009 20:11 (eg)
+;;;;
+
+(interface stklos-gtklos
+  (language stklos)
+  (import stklos-gtk-base stklos-gtk-canvas)
+  (export
+     ;; main
+     timeout
+     when-idle
+     kill-idle
+     
+     ;; utils.stk
+     gtklos-slot-is-ro
+     gtklos-slot-is-init-only
+     start-gtk-thread
+     gtklos-width
+     gtklos-height
+     
+     ;; event.stk
+     event-widget
+     event-type
+     event-x
+     event-y
+     event-char
+     event-keysym
+     event-modifiers
+     event-button
+     event-describe
+     event-connect
+     event-connect-after
+     
+     ;; widget.stk
+     wid
+     show
+     parent
+     can-default
+     can-focus
+     has-default
+     has-focus
+     height-request
+     name
+     visible
+     width-request
+     width
+     height
+     destroy
+     tooltip
+     sensitive
+
+     ;; container.stk
+     children
+     border-width
+     container-add!
+     container-remove!
+     container-remove-all!
+     container-info
+
+     ;; grid
+     <grid>
+     rows
+     columns
+     row-spacing
+     column-spacing
+     row-spacing
+     homogeneous
+     
+     
+     ;; layout.stk
+     layout
+     expand
+     fill
+     border-width
+     padding
+     
+     ;; window.stk
+     <window>
+     transient
+     title
+     resizable
+     modal
+     
+     ;; box.stk
+     <hbox>
+     <vbox>
+     <box>
+     expand
+     fill
+     padding
+     homogeneous
+     spacing
+
+     ;; label.stk
+     <label>
+     text
+
+     ;; button.stk
+     <button>
+     command
+     relief
+     focus-on-click
+     relief
+     use-stock
+     use-underline
+     xalign
+     yalign
+
+     ;; radiobutton.stk
+     <radio-button>
+     texts
+     
+     ;; checkbutton.stk
+     <check-button>
+     value
+
+     ;; combobox.stk
+     <combobox>
+     <entry-combobox>
+     items
+
+     ;; frame.stk
+     <frame>
+     title-justify
+     shadow
+     
+     ;; separator.stk
+     <separator>
+
+     ;; entry.stk
+     <entry>
+     max-length
+     text-visibility
+     value
+     cursor-position
+     
+     ;; text.stk
+     <text>
+     text-buffer
+     editable
+     cursor-visible
+     text-overwrite
+     text-read-file
+     text-write-file
+     text-cut-clipboard
+     text-copy-clipboard
+     text-paste-clipboard
+
+     ;; image.stk
+     <image>
+     file
+     image-path
+
+     ;; handle.stk
+     <handle-window>
+     
+     ;; toolbar.stk
+     <toolbar>
+     orientation
+     show-arrow
+     toolbar-style
+     <toolbar-space-item>
+     <toolbar-button-item>
+     items
+     stock-id
+     add-toolbar-items
+     
+     ;; gauge
+     <gauge>
+     orientation
+     draw-value
+     activity-mode
+     discrete-blocks
+     value
+     text
+     gauge-pulse
+     style
+     
+     ;; scale
+     <scale>
+     <hscale>
+     <vscale>
+     digits
+     orientation
+     from
+     to
+     value
+     increment
+     show-value
+     value-pos
+
+     ;; scroll
+     <scroll>
+     hpolicy
+     vpolicy
+     hside
+     vside
+
+     ;; menu
+     <menu-bar>
+     shadow-type
+     padding
+
+     <menu>
+     
+     <menu-item>
+     text
+     right-justified
+     accel-path
+     use-underline
+
+     <menu-separator-item>
+
+     <menu-tear-off-item>
+
+     <menu-check-item>
+     value
+
+     <menu-radio-item>
+     sibling
+
+     add-menubar-items
+     
+     ;; widget.stk
+     xalign
+     yalign
+     xpad
+     ypad
+
+     ;; dialog
+     <dialog>
+     make-ok-cancel-dialog
+     make-simple-dialog
+     make-simple-message-dialog
+     
+     ;; fontselector
+     <font-selector>
+     preview-text
+     make-font-selector-dialog
+
+     ;; colorselector
+     <color-selector>
+     make-color-selector-dialog
+
+     ;; fileselector
+     <file-selector>
+     make-file-selector-dialog
+     action
+     show-hidden
+     select-multiple
+
+     ;; Canvas
+     <canvas>
+     ;anchor
+     automatic-bounds
+     background-color
+     bounds-from-origin
+     bounds-padding
+     clear-background
+     integer-layout
+     redraw-when-scrolled
+     resolution-x
+     resolution-y
+     scale
+     scale-x
+     scale-y
+     ;units
+     canvas-x1
+     canvas-x2
+     canvas-y1
+     canvas-y2
+
+     ;; Canvas-item
+     can-focus
+     description
+     title
+     tooltip
+     antialias
+     clip-fill-rule
+     clip-path
+     fill-color
+     font
+     line-width
+     stroke-color
+     canvas-item-animate
+     canvas-item-stop-animation
+     canvas-item-raise
+     canvas-item-lower
+     canvas-item-remove
+
+     <canvas-rectangle>
+     height
+     radius-x
+     radius-y
+     width
+     canvas-item-x
+     canvas-item-y
+
+     <canvas-text>
+     value
+     use-markup
+
+     <canvas-line>
+     arrow-length
+     arrow-tip-length
+     arrow-width
+     close-path
+     end-arrow
+     points
+     start-arrow
+
+     <canvas-polygon>
+     
+     <canvas-path>
+     value
+
+     <canvas-ellipse>
+     center-x
+     center-y
+     radius-x
+     radius-y
+     ))

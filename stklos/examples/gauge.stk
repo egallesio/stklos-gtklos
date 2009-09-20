@@ -1,0 +1,83 @@
+;;;;
+;;;; gauge.stk				-- GTklos Gauge Demo
+;;;; 
+;;;; Copyright © 2000-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 20-Oct-2000 12:55 (eg)
+;;;; Last file update: 28-Jun-2009 18:07 (eg)
+;;;;
+
+(include "gtklos-demo.stk")
+
+(define (main args)
+  (let* ((win  (make <demo-window> :title "Gauge Demo" 
+		     		   :file "gauge" :border-width 5 
+				   :message "
+Gauge Demonstration
+
+This is a simple demo showing a gauge and the various
+styles it can be given.
+"))
+	 (box  (make <vbox> :parent win))
+	 (gauge (make <gauge>
+		  :width 250
+		  :height 20
+		  :discrete-blocks 8
+		  :value 0.0
+		  :parent box))
+	 (bbox (make <hbox> :parent box :expand #t :fill 'both))
+	 (left (make <vbox> :parent bbox :border-width 20))
+	 (show  (make <check-button>
+		  :text "Draw value"
+		  :parent left
+		  :command (lambda(e)
+			     (let ((v (value (event-widget e))))
+			       (set! (draw-value gauge) v)))))
+	 (act  (make <check-button>
+		  :text "Activity mode"
+		  :parent left
+		  :command (lambda(e)
+			     (let ((v (value (event-widget e))))
+			       (set! (activity-mode gauge) v)))))
+	 (style 'continuous)
+	 (rad  (make <radio-button>
+		 :parent bbox
+		 :border-width 10
+		 :title "Style"
+		 :text "Radio Demo"
+		 :texts '("Continuous" "Discrete")
+		 :command (lambda (e)
+			    (let ((mode (text (event-widget e))))
+			      (set! style (if (equal? mode "Continuous")
+					      'continuous
+					      'discrete))
+			      (eprintf "Choosing ~S mode\n" mode)
+			      (slot-set! gauge 'style style))))))
+      (let ((v 0))
+	(timeout 50 (lambda ()
+		      (if (activity-mode gauge)
+			  (gauge-pulse gauge)
+			  (begin
+			    (set! (value gauge) (exact->inexact (/ v 100)))
+			    (set! v (if (= v 100) 0 (+ v 1)))))
+		      #t))
+      (gtk-main))))
+
+ 

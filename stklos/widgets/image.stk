@@ -1,0 +1,117 @@
+;;;;
+;;;; image.stk					-- GTK Image Widget
+;;;; 
+;;;; Copyright © 2000-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 13-Oct-2000 17:15 (eg)
+;;;; Last file update: 28-Jun-2009 00:14 (eg)
+;;;;
+
+
+;;
+;; 				Images Utilities
+;;
+
+(define *image-suffixes* '("xpm" "jpg" "jpeg" "gif" "png"))
+  
+(define *image-path* 
+  (let ((user-path (build-path-from-shell-variable "STKLOS_IMAGE_PATH")))
+    (if (null? user-path)
+	(list (string-append (%library-prefix) 
+			     "/share/stklos/"
+			     (version)
+			     "/images"))
+	user-path)))
+
+(define (find-image fn)
+  (%guess-pathname fn (image-path) *image-suffixes*))
+
+
+(define image-path
+  (make-parameter *image-path*
+		  (lambda (path)
+		    (for-each (lambda (x)
+				(unless (string? x) 
+				  (error 'image-path "bad directory ~S" x)))
+			      path)
+		    path)))
+
+
+(define (image-exists? fn)
+  (and (find-image fn) #t))
+
+;;;; Special code for inline images
+(define set-image-value!
+  (lambda (o v)
+    (let ((file (temporary-file-name)))
+      (with-output-to-file file
+	(lambda () (display v) (flush-output-port)))
+      (slot-set! o 'file file)
+      (%widget-data-set! o :image-value v)
+      (remove-file file)
+      (void))))
+
+(define get-image-value
+  (lambda (o)
+    (%widget-data-get o :image-value #f)))
+      
+
+;;;; ======================================================================
+;;;;
+;;;; 				Class <image> 
+;;;;
+;;;; ======================================================================
+(define-class <image> (<gtk-misc>)
+  ((%file       :allocation	:gtk-property
+		:gtk-name	"file")
+   (file	:accessor	file
+		:init-keyword	:file
+		:allocation	:virtual
+		:slot-ref	(lambda (o)
+				  (slot-ref o '%file))
+		:slot-set!	(lambda (o v)
+				  (slot-set! o '%file (find-image v))))
+   (stock-id	:accessor	stock-id
+		:init-keyword	:stock-id
+		:allocation	:gtk-property
+		:gtk-name	"stock")
+   (value	:accessor	value
+		:init-keyword	:value
+		:allocation	:virtual
+		:slot-ref	get-image-value
+		:slot-set!	set-image-value!)))
+
+				  
+(define-method realize-widget ((self <image>) initargs)
+  (let ((im (gtk-image-new)))
+    (cpointer-type-set! im 'gtk-image)
+    (slot-set! self 'wid im))
+
+  ;; If a file is specified, patch the initargs list to use the image-path
+  ;; as a convenience
+  (let ((file  (key-get initargs :file #f))
+	(value (key-get initargs :value #f))
+	(tmp   #f))
+    (when file
+      ;; Initialize image using the path-image 
+      (let ((file (or (find-image file) file)))
+	(unless (file-exists? file)
+	  (error "cannot create image from ~S. File doesn't exists" file))
+	(key-set! initargs :file file)))))

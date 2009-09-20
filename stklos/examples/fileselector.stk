@@ -1,0 +1,54 @@
+;;;;
+;;;; filesector.stk	-- GTK File Selector Demos
+;;;; 
+;;;; Copyright © 2000-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date:  6-Nov-2000 18:59 (eg)
+;;;; Last file update: 14-Jul-2009 00:40 (eg)
+;;;;
+
+(include "gtklos-demo.stk")
+
+(define file-msg "
+This is a demo of the File Selector  Widget.
+
+Use the button \"Selector Dialog\" to pop up the
+modal selection window.
+")
+
+
+(define (main args)
+  (let* ((win (make <demo-window> :title "File Selector Demo" :x 100 :y 100
+		    		  :file "fileselector" :border-width 5
+				  :padding 20 :message file-msg))
+	 (fs  (make <file-selector> :parent win :width 500 :height 350))
+	 (bot (make <hbox> :border-width 20 :fill #t :expand #t :parent win)))
+
+    (make <button> :parent bot :text "Display file choosed"
+	  :command (lambda (_)
+		     (eprintf "File choosed: ~S\n" (value fs))))
+    
+    (make <button> :text "Use modal dialog" :parent bot
+	  :command (lambda (e)
+		     (let ((v (make-file-selector-dialog)))
+		       (if v
+			   (format #t "You have choosed the file ~S\n" v)
+			   (format #t "No file choosed\n"))))))
+    (gtk-main))

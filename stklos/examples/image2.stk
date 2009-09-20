@@ -1,0 +1,77 @@
+;;;;
+;;;; image2.stk	-- An Image Animation 
+;;;; 
+;;;; Copyright © 2001-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 16-Aug-2001 15:45 (eg)
+;;;; Last file update: 28-Jun-2009 00:23 (eg)
+;;;;
+
+(include "gtklos-demo.stk")
+
+;; Change the image-path to allow execution of the demo without installation
+(image-path (cons "./images"
+		  (image-path)))
+
+
+(define *speed* 100)	;; Speed of the animation in ms
+(define *imgs*		;; The image files
+  (list "anim-0.png" "anim-1.png" "anim-2.png" "anim-3.png"
+	"anim-4.png" "anim-5.png" "anim-6.png" "anim-7.png"
+	"anim-8.png" "anim-9.png" ))
+
+(define (animate scale img)
+  ;; Use a thread to make the animation
+  (let ((t (make-thread (lambda ()
+			  (let Loop ()
+			    (when (gtk-events-pending)
+			      (gtk-main-iteration-do #f)
+			      (Loop))
+			    (set! (file img) (car *imgs*))
+			    (set! *imgs* (cdr *imgs*))
+			    (sleep (inexact->exact (value scale)))
+			    (Loop))))))
+    (thread-start! t)
+    (thread-join! t)))
+; ======================================================================
+
+(define msg "
+A simple animation made with threads
+
+A simple animation made of several files in PNG format.
+Use the scale to change the delay between image changes.
+")
+
+
+(define (main args)
+  (let* ((win  (make <demo-window>  :title "Buttons Demo" :x 100 :y 100
+		   		 :file "image2" :border-width 5
+				 :message msg))
+	 (box  (make <box> :orientation 'vertical :parent win))
+	 (img  (make <image> :parent box))
+	 (s    (make <scale> :orientation 'horizontal :from 5 :to 200
+		     :value 100 :digits 0 :increment 10 :parent box)))
+    ;; Build the list of images and make it circular
+    (set-cdr! (last-pair *imgs*) *imgs*)
+
+    ;; start the animation
+    (animate s img)))
+
+; LocalWords:  imgs PNG galeon

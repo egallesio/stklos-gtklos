@@ -1,0 +1,93 @@
+;;;;
+;;;; fontselector.stk			-- GTklos Font Selector Widget
+;;;; 
+;;;; Copyright © 2002-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 16-Feb-2002 11:27 (eg)
+;;;; Last file update: 14-Jul-2009 00:13 (eg)
+;;;;
+
+(define-class <font-selector> (<gtk-widget>)
+  ((value	:accessor 	value
+		:init-keyword	:value
+		:allocation 	:virtual
+		:slot-ref	(lambda (o)
+				  (gtk-font-selection-get-font-name
+				     (slot-ref o 'wid)))
+		:slot-set!	(lambda (o v)
+				  (gtk-font-selection-set-font-name
+				     (slot-ref o 'wid) v)))
+   (preview-text :accessor	preview-text
+		 :init-keyword	:preview-text
+		 :allocation	:virtual
+		 :slot-ref	(lambda (o)
+				  (gtk-font-selection-get-preview-text
+				    (slot-ref o 'wid)))
+		 :slot-set!	(lambda (o v)
+				  (gtk-font-selection-set-preview-text
+				    (slot-ref o 'wid) v)))))
+
+(define-method realize-widget ((self <font-selector>) initargs)
+  (let ((fs (gtk-font-selection-new)))
+    (cpointer-type-set! fs 'font-selector)
+    (slot-set! self 'wid fs)))
+
+
+;======================================================================
+;
+;		     A dialog selector for choosing fonts
+;
+;====================================================================== 
+
+;; The following code is bugged for the value. It seems to be a GTK problem
+;; Hence another version (different form teh one used for othes dialogs)
+;; is used below 
+
+#;(define (make-font-selector-dialog :key (title "Choose a font ...")
+				        (value "Sans 10" value?)
+					(preview-text "Test" preview-text?))
+  (let* ((box  (make <box> :border-width 8 :expand #t :fill #t 
+		     :width 480 :height 300))
+	 (fs   (make <font-selector> :parent box)))
+    (when preview-text? (slot-set! fs 'preview-text preview-text))
+    (when value?        (slot-set! fs 'value value)) ;; GTK is bugged here.
+
+    (make-ok-cancel-dialog title
+			   box
+			   (lambda (dialog)
+			     (slot-ref fs 'value)))))
+
+
+(define (make-font-selector-dialog :key (title "Choose a font ...")
+				        (value "" value?)
+					(preview-text "" preview-text?))
+  ;; Prepare dialog
+  (let ((w   (gtk-font-selection-dialog-new title)))
+    (when value?
+      (gtk-font-selection-dialog-set-font-name w value))
+    (when preview-text?
+      (gtk-font-selection-dialog-set-preview-text w preview-text))
+    ;; Run it
+    (let ((res (case (gtk-dialog-run w)
+		 ((-5) 		;; -5 is the code of OK button
+		  (gtk-font-selection-dialog-get-font-name w))
+		 (else #f))))
+      (gtk-widget-destroy w)
+      res)))

@@ -1,0 +1,64 @@
+#! /usr/bin/env stklos -f
+;;;;
+;;;; scale.stk	-- GTklos Scale Demo
+;;;; 
+;;;; Copyright © 2001-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date:  2-Aug-2001 06:51 (eg)
+;;;; Last file update: 10-May-2009 23:01 (eg)
+;;;;
+
+(include "gtklos-demo.stk")
+
+(define msg "
+Scales Demo
+
+A simple demo showing an horizontal and a vertical scale.
+A message is printed when the scale is changed.
+")
+
+(define (main args)
+  (let* ((win (make <demo-window> :title "Scale Demo" 
+                    :file "scale" :border-width 5 :message msg))
+	 (box (make <hbox> :parent win :expand #t :fill #t))
+         (hs  (make <scale> :orientation 'horizontal
+		            :parent box
+			    :value-pos 'left
+			    :from 90
+			    :to 200
+			    :value 120))
+         (vs  (make <scale> :orientation 'vertical
+		    	    :parent box
+			    :height 300
+			    :value-pos 'right
+			    :from 0
+			    :to 1000
+			    :increment 100
+			    :digits 0
+			    :value 40)))
+    ;; Set command after because when a key is used event widget is the
+    ;; demo-window and not the scale
+    (set! (command hs)	(lambda (e) (eprintf "horizontal: ~S\n" (value hs))))
+    (set! (command vs)	(lambda (e) (eprintf "vertical: ~S\n" (value vs))))
+    
+    (gtk-main)))
+
+
+

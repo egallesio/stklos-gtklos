@@ -1,0 +1,77 @@
+;;;;
+;;;; colorselector.stk		-- Color Selector GTklos Widget
+;;;; 
+;;;; Copyright © 2002-2008 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 14-Feb-2002 22:47 (eg)
+;;;; Last file update: 21-Aug-2008 22:53 (eg)
+;;;;
+
+(define (%color-selector-value-getter o)
+  (let ((&x  (%string->color "#000"))
+	(wid (slot-ref o 'wid)))
+    (gtk-color-selection-get-current-color wid &x)
+    ;; Return a cons (color . opacity)
+    (cons (%color->string &x)
+	  (remainder (gtk-color-selection-get-current-alpha wid)
+		     256))))
+
+(define (%color-selector-value-setter o v)
+  (let ((color   (if (pair? v) (car v) v))
+	(opacity (if (pair? v) (cdr v) 255))
+	(wid     (slot-ref o 'wid)))
+    (gtk-color-selection-set-current-color wid (%string->color color))
+    (gtk-color-selection-set-current-alpha wid (+ (* opacity 256)
+						  opacity))))
+    
+
+;======================================================================
+;
+;			 < C o l o r - s e l e c t o r >
+;
+;======================================================================
+(define-class <color-selector> (<gtk-widget>)
+  ((value	:accessor 	value
+		:init-keyword	:value
+		:allocation 	:virtual
+		:slot-ref	%color-selector-value-getter		
+		:slot-set!	%color-selector-value-setter)))
+
+
+(define-method realize-widget ((self <color-selector>) initargs)
+  (let ((wid (gtk-color-selection-new)))
+    (cpointer-type-set! wid 'color-selector)
+    (slot-set! self 'wid wid)))
+
+
+;======================================================================
+;
+;			make-color-selector-dialog utility
+;
+;====================================================================== 
+(define (make-color-selector-dialog :key (title "Choose a color ...")
+				         (value '("#3239D1" . 128)))
+  
+  (let* ((box  (make <box> :border-width 8))
+	 (fs   (make <color-selector> :parent box :value value)))
+    (make-ok-cancel-dialog title
+			   box
+			   (lambda (_) (slot-ref fs 'value)))))
+	 

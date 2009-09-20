@@ -1,0 +1,164 @@
+;;;;
+;;;; grid.stk						-- GTK Grid 
+;;;; 
+;;;; Copyright © 2001-2008 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 30-May-2001 21:25 (eg)
+;;;; Last file update: 23-Dec-2008 22:55 (eg)
+;;;;
+
+;======================================================================
+;
+;	              C l a s s    < g r i d >
+;
+;======================================================================       
+(define-class <grid> (<gtk-container>)
+  ((%last-col		:init-form	0)
+   (%last-row		:init-form	0)
+   (rows		:accessor	rows
+			:init-keyword	:rows
+			:allocation	:gtk-property
+			:gtk-name	"n-rows")
+   (columns		:accessor	columns
+			:init-keyword	:columns
+			:allocation	:gtk-property
+			:gtk-name	"n-columns")
+   (row-spacing		:accessor	row-spacing
+			:init-keyword	:row-spacing
+			:allocation	:gtk-property
+			:gtk-name	"row-spacing")
+   (column-spacing	:accessor	column-spacing
+			:init-keyword	:column-spacing
+			:allocation	:gtk-property
+			:gtk-name	"column-spacing")
+   (homogeneous		:accessor	homogeneous
+			:init-keyword	:homogeneous
+			:allocation	:gtk-property)))
+
+(define-method realize-widget ((self <grid>) initargs)
+  (let ((g (gtk-table-new 1 1 #t)))
+    (cpointer-type-set! g 'gtk-grid)
+    (slot-set! self 'wid g)))
+
+;; ======================================================================
+;;
+;; 			C O N T A I N E R - A D D !
+;;
+;; ======================================================================
+
+(define (%grid-add-widget cont widget last-row last-col rows columns
+			  :key (width 	1)
+			       (height 	1)
+			       (x 	0 	x?)
+			       (y 	0 	y?)
+			       (fill 	'both)
+			       (expand-x #t)
+			       (expand-y #t)
+			       (pad-x 	0)
+			       (pad-y 	0))
+
+  (let ((x    (if x? x last-col))
+	(y    (if y? y last-row))
+	(c    (wid cont))
+	(w    (wid widget))
+	(fill (format "~A" fill))) ; to accept strings and symbols
+    
+    ;; compute new values for last-col and last-row
+    (set! last-col (+ x width))
+    (when (> last-col columns)
+      (set! x 0)
+      (set! y (+ y 1))
+      (set! last-col width))
+    
+    (set! last-row y)
+    
+    ;; resize the grid if needed
+;;      (if (> (+ x width) columns)
+;;	  (slot-set! cont 'columns (+ x width)))
+;;      (if (> (+ y height) rows)
+;;	  (slot-set! cont 'rows (+ y height)))
+
+    (slot-set! cont '%last-col last-col)
+    (slot-set! cont '%last-row last-row)
+    
+    (let ((x-opt (if expand-x 1 0))
+	  (y-opt (if expand-y 1 0)))
+      (cond 
+	((equal? fill "x")    (set! x-opt (+ x-opt 4)))
+	((equal? fill "y")    (set! y-opt (+ y-opt 4)))
+	((equal? fill "both") (set! x-opt (+ x-opt 4))
+			      (set! y-opt (+ y-opt 4)))
+	((equal? fill "none") 'done)
+	(else    (error 'container-add! "~S is a bad value for option :fill"
+			fill)))
+      
+      ;; We have all the values; call gtk-table-attach
+      (gtk-table-attach (slot-ref cont 'wid)
+			(slot-ref widget 'wid)
+			x			; left-attach
+			(+ x width)		; right-attach
+			y			; top-attach
+			(+ y height)		; bottom-attach
+			x-opt
+			y-opt
+			pad-x
+			pad-y))))
+  
+
+
+(define-method container-add! ((cont <grid>) (widget <gtk-widget>) . opt)
+  (apply %grid-add-widget cont
+	 		  widget
+			  (slot-ref cont '%last-row)
+			  (slot-ref cont '%last-col)
+			  (rows cont)
+			  (columns cont)
+			  opt))
+
+;; ======================================================================
+;;
+;; 			C O N T A I N E R - I N F O
+;;
+;; ======================================================================
+(define-method %container-info ((parent <grid>) widget)
+  (let ((w (wid widget))
+	(c (wid parent)))
+    (let* ((x      (%gtk-get-child-property c w "left-attach"))
+	   (y      (%gtk-get-child-property c w "top-attach"))
+	   (width  (- (%gtk-get-child-property c w "right-attach") x))
+	   (height (- (%gtk-get-child-property c w "bottom-attach") y))
+	   (pad-x  (%gtk-get-child-property c w "x-padding"))
+	   (pad-y  (%gtk-get-child-property c w "y-padding"))
+	   (xopt   (%gtk-get-child-property c w "x-options"))
+	   (yopt   (%gtk-get-child-property c w "y-options")))
+      (list :in		parent
+	    :x		x
+	    :y		y
+	    :width	width
+	    :height	height
+	    :pad-x	pad-x
+	    :pad-y	pad-y
+	    :expand-x   (odd? xopt)
+	    :expand-y   (odd? yopt)
+	    :fill	(cond
+			  ((and (>= xopt 4) (>= yopt 4)) "both")
+			  ((>= xopt 4)			 "x")
+			  ((>= yopt 4)			 "y")
+			  (else				 "none"))))))

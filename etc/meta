@@ -1,0 +1,8 @@
+(
+ (description "GTK+ 2.x binding for STklos -- GTklos level")
+ (version "0.99.0")
+ (author "Erick Gallesio <eg at unice.fr>")
+ (maintainer "Erick Gallesio <eg at unice.fr>")
+ (stklos-doc (html))
+ (license gpl-2.1)
+)

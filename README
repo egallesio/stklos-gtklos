@@ -1,0 +1,20 @@
+			
+			    STklos-GTklos package 
+
+GTklos is the name of the OO model used for GUI programming GUIs in
+STklos. This model is very similar to the one originally defined in
+STk. 
+
+The bindings used here are for GTK+ 2
+
+This package needs the stklos-gtk-base and stklos-gtk-canvas ScmPkg
+packages.
+
+Examples are in stklos/examples directory. 
+
+To test stklos-gtklos just type 
+   stklos-pkg --test stklos-gtklos
+in a console. 
+
+
+

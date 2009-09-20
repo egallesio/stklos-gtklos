@@ -1,0 +1,371 @@
+;;;;
+;;;; canvas-vitem.stk	-- GTklos Canvas Items 
+;;;; 
+;;;; Copyright © 2002-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date:  9-Mar-2002 11:39 (eg)
+;;;; Last file update: 11-Sep-2009 19:28 (eg)
+;;;;
+
+
+;;;; ======================================================================
+;;;; 
+;;;; 		< g t k - c a n v a s - i t e m >   c l a s s
+;;;;
+;;;; ======================================================================
+(define-class <gtk-canvas-item> (<gtk-object>)
+  ((wid			:getter 	wid)		;; Widget Id
+   (%event 		:init-form 	'())		;; Private event handler
+   (%data		:init-form 	'())		;; Private data
+   (parent		:getter		parent
+			:init-keyword	:parent
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (%widget-data-get o :parent #f))
+			:slot-set!	(lambda (o v)
+					  (when (slot-ref o 'parent)
+					    (error "Parent of ~S can't be changed"
+						   o))
+					  (%widget-data-set! o :parent v)))
+					  
+   (can-focus		:accessor	can-focus
+			:init-keyword	:can-focus
+			:allocation	:gtk-property)
+   (description		:accessor	description
+			:init-keyword	:description
+			:allocation	:gtk-property)
+;   (parent		:accessor	parent
+;			:init-keyword	:parent
+;			:allocation	:gtk-property)
+   #;(pointer-events	:accessor	pointer-events
+   			:init-keyword	:pointer-events
+			:allocation	:gtk-property)
+   (title		:accessor	title
+			:init-keyword	:title
+			:allocation	:gtk-property)
+   (tooltip		:accessor	tooltip
+			:init-keyword	:tooltip
+			:allocation	:gtk-property)
+   #;(transform		:accessor	transform
+			:init-keyword	:transform
+			:allocation	:gtk-property)
+   #;(visibility	:accessor	visibility
+			:init-keyword	:visibility
+			:allocation	:gtk-property)
+   #;(visibility-threshold :accessor	visibility-threshold
+			:init-keyword	:visibility-threshold
+			:allocation	:gtk-property)))
+
+
+;;;
+;;; Initialize for <gtk-canvas-item>
+;;;
+(define-method make-canvas-item ((self <gtk-canvas-item>))
+  (error 'make-canvas-item "no make-canvas-item method defined for ~S" self))
+
+(define-method initialize ((self <gtk-canvas-item>) initargs)
+  (let ((parent (key-get initargs :parent #f)))
+    ;; Verify that we have a parent for this object
+    (unless parent
+      (error 'initialize "cannot create a ~S without parent"
+	     (class-name (class-of self))))
+
+    ;; Create the canvas item
+    (let ((id (make-canvas-item self (slot-ref parent '%root))))
+      (slot-set! self 'wid id))
+    
+    ;; And initialize it
+    (next-method)))
+
+
+;;;
+;;; M E T H O D S
+;;;
+
+;;; Animation
+(define-method canvas-item-animate ((self <gtk-canvas-item>) 
+				      :key (x 0.0) (y 0.0)
+				           (scale 1.0) (degrees 360.0)
+					   (absolute #t) (duration 1000)
+					   (step-time 1) (animation-type 'freeze))
+  (let ((type (case animation-type
+		((freeze) 0)
+		((reset)  1)
+		((restart) 2)
+		((bounce)  3)
+		(else (error "bad animation type ~S" animation-type)))))
+    (goo-canvas-item-animate (slot-ref self 'wid) x y scale degrees absolute
+			     duration step-time type)))
+
+
+(define-method canvas-item-stop-animation ((self <gtk-canvas-item>))
+  (goo-canvas-item-stop-animation (slot-ref self 'wid)))
+
+;;; Raise / Lower
+(define-method canvas-item-raise ((self <gtk-canvas-item>) :optional above)
+  (when (and above (not (is-a? above <gtk-canvas-item>)))
+    (error 'canvas-item-raise "bad item ~S" above))
+  
+  (goo-canvas-item-raise (slot-ref self 'wid) (if above
+						  (slot-ref self 'above)
+						  (void))))
+
+(define-method canvas-item-lower ((self <gtk-canvas-item>) :optional below)
+  (when (and below (not (is-a? below <gtk-canvas-item>)))
+    (error 'canvas-item-raise "bad item ~S" below))
+  
+  (goo-canvas-item-lower (slot-ref self 'wid) (if below
+						  (slot-ref self 'below)
+						  (void))))
+
+;;; Remove
+(define-method canvas-item-remove ((self <gtk-canvas-item>))
+  (goo-canvas-item-remove (slot-ref self 'wid)))
+
+
+;;;; ======================================================================
+;;;; 
+;;;; 	< g t k - c a n v a s - i t e m - s i m p l e >   c l a s s
+;;;;
+;;;; ======================================================================
+(define-class <gtk-canvas-item-simple> (<gtk-canvas-item>)
+  ((antialias		:accessor	antialias
+			:init-keyword	:antialias
+			:allocation	:gtk-property)
+   (clip-fill-rule	:accessor	clip-fill-rule
+			:init-keyword	:clip-fill-rule
+			:allocation	:gtk-property)
+   #;(clip-path		:accessor	clip-path
+			:init-keyword	:clip-path
+			:allocation	:gtk-property)
+   (fill-color		:accessor	fill-color
+			:init-keyword	:fill-color
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (%widget-data-get o :fill-color #f))
+			:slot-set!	(lambda (o v)
+					  (%gtk-set-property! (slot-ref o 'wid)
+							      "fill-color"
+							      v)
+					  (%widget-data-set! o :fill-color v)))
+   #;(fill-pattern	:accessor	fill-pattern
+			:init-keyword	:fill-pattern
+			:allocation	:gtk-property)
+   #;(fill-pixbuf	:accessor	fill-pixbuf
+   			:init-keyword	:fill-pixbuf
+			:allocation	:gtk-property)
+   #;(fill-rule		:accessor	fill-rule
+			:init-keyword	:fill-rule
+			:allocation	:gtk-property)
+   (font		:accessor	font
+			:init-keyword	:font
+			:allocation	:gtk-property)
+   #;(hint-metrics	:accessor	hint-metrics
+			:init-keyword	:hint-metrics
+   			:allocation	:gtk-property)
+   #;(line-cap		:accessor	line-cap
+			:init-keyword	:line-cap
+			:allocation	:gtk-property)
+   #;(line-dash		:accessor	line-dash
+			:init-keyword	:line-dash
+			:allocation	:gtk-property)
+   #;(line-join		:accessor	line-join
+			:init-keyword	:line-join
+			:allocation	:gtk-property)
+   #;(line-join-miter-limit :accessor	line-join-miter-limit
+   			:init-keyword	:line-join-miter-limit
+   			:allocation	:gtk-property)
+  (line-width		:accessor	line-width
+			:init-keyword	:line-width
+			:allocation	:gtk-property)
+  #;(operator		:accessor	operator
+			:init-keyword	:operator
+			:allocation	:gtk-property)
+  (stroke-color		:accessor	stroke-color
+			:init-keyword	:stroke-color
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (%widget-data-get o :stroke-color #f))
+			:slot-set!	(lambda (o v)
+					  (%gtk-set-property! (slot-ref o 'wid)
+							      "stroke-color"
+							      v)
+					  (%widget-data-set! o :stroke-color v)))
+  #;(stroke-pattern	:accessor	stroke-pattern
+			:init-keyword	:stroke-pattern
+			:allocation	:gtk-property)
+  #;(stroke-pixbuf	:accessor	stroke-pixbuf
+			:init-keyword	:stroke-pixbuf
+			:allocation	:gtk-property)
+
+  (width		:accessor	width
+			:init-keyword	:width
+			:allocation	:gtk-property)
+  (height		:accessor	height
+			:init-keyword	:height
+			:allocation	:gtk-property)
+  (x			:accessor	canvas-item-x
+			:init-keyword	:x
+			:allocation	:gtk-property)
+  (y			:accessor	canvas-item--y
+			:init-keyword	:y
+			:allocation	:gtk-property)))
+
+
+;;;; ======================================================================
+;;;; 
+;;;; 	< c a n v a s - r e c t a n g l e >   c l a s s
+;;;;
+;;;; ======================================================================
+(define-class <canvas-rectangle> (<gtk-canvas-item-simple>)
+  ((radius-x		:accessor	radius-x
+			:init-keyword	:radius-x
+			:allocation	:gtk-property)
+   (radius-y		:accessor	radius-y
+			:init-keyword	:radius-y
+			:allocation	:gtk-property)))
+
+
+(define-method make-canvas-item ((self <canvas-rectangle>) parent)
+  (goo-canvas-rect-new parent 0 0 0 0))
+
+;;;; ======================================================================
+;;;; 
+;;;; 	< c a n v a s - t e x t  >   c l a s s
+;;;;
+;;;; ======================================================================
+(define-class <canvas-text> (<gtk-canvas-item-simple>)
+  (
+   #;(alignment		:accessor	alignment
+			:init-keyword	:alignment
+			:allocation	:gtk-property)
+   #;(anchor		:accessor	anchor
+   			:init-keyword	:anchor
+			:allocation	:gtk-property)
+   #;(ellipsize		:accessor	ellipsize
+			:init-keyword	:ellipsize
+			:allocation	:gtk-property)
+   (value		:accessor	value
+			:init-keyword	:value
+			:allocation	:gtk-property
+			:gtk-name	"text")
+   (use-markup		:accessor	use-markup
+			:init-keyword	:use-markup
+			:allocation	:gtk-property)
+   #;(wrap		:accessor	wrap
+   			:init-keyword	:wrap
+   			:allocation	:gtk-property)))
+
+
+(define-method make-canvas-item ((self <canvas-text>) parent)
+  (goo-canvas-text-new parent "" 0 0 -1 0))
+
+;;;; ======================================================================
+;;;; 
+;;;; 	< c a n v a s - l i n e  >   c l a s s
+;;;;
+;;;; ======================================================================
+(define-class <canvas-line> (<gtk-canvas-item-simple>)
+  ((arrow-length	:accessor	arrow-length
+			:init-keyword	:arrow-length
+			:allocation	:gtk-property)
+   (arrow-tip-length	:accessor	arrow-tip-length
+			:init-keyword	:arrow-tip-length
+			:allocation	:gtk-property)
+   (arrow-width		:accessor	arrow-width
+			:init-keyword	:arrow-width
+			:allocation	:gtk-property)
+   (close-path		:accessor	close-path
+			:init-keyword	:close-path
+			:allocation	:gtk-property)
+   (end-arrow		:accessor	end-arrow
+			:init-keyword	:end-arrow
+			:allocation	:gtk-property)
+   (points		:accessor	points
+			:init-keyword	:points
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (goo-polyline-get-points (wid o)))
+			:slot-set!	(lambda (o v)
+					  (goo-polyline-set-points! (wid o) v)))
+   (start-arrow		:accessor	start-arrow
+			:init-keyword	:start-arrow
+			:allocation	:gtk-property)))
+
+(define-method make-canvas-item ((self <canvas-line>) parent)
+  (goo-canvas-polyline-new-line  parent 0 0 0 0))
+
+
+;;;; ======================================================================
+;;;; 
+;;;; 	< c a n v a s - p o l y g o n  >   c l a s s
+;;;;
+;;;; ======================================================================
+(define-class <canvas-polygon> (<canvas-line>)
+  ())
+
+(define-method make-canvas-item ((self <canvas-line>) parent)
+  (goo-canvas-polyline-new-line  parent 0 0 0 0))
+
+(define-method initialize ((self <canvas-polygon>) initargs)
+  (let ((r (next-method)))
+    (slot-set! r 'close-path #t)
+    r))
+  
+
+;;;; ======================================================================
+;;;; 
+;;;; 	< c a n v a s - l i n e  >   c l a s s
+;;;;
+;;;; ======================================================================
+(define-class <canvas-path> (<gtk-canvas-item-simple>)
+  ((value		:accessor	value
+			:init-keyword	:value
+			:allocation	:gtk-property
+			:gtk-name	"data")))
+
+(define-method make-canvas-item ((self <canvas-path>) parent)
+  (goo-canvas-path-new  parent ""))
+
+
+;;;; ======================================================================
+;;;; 
+;;;; 	< c a n v a s - e l l i p s e  >   c l a s s
+;;;;
+;;;; ======================================================================
+(define-class <canvas-ellipse> (<gtk-canvas-item-simple>)
+  ((center-x		:accessor	center-x
+			:init-keyword	:center-x
+			:allocation	:gtk-property)
+   (center-y		:accessor	center-y
+			:init-keyword	:center-y
+			:allocation	:gtk-property)
+   (radius-x		:accessor	radius-x
+			:init-keyword	:radius-x
+			:allocation	:gtk-property)
+   (radius-y		:accessor	radius-y
+			:init-keyword	:radius-y
+			:allocation	:gtk-property)))
+
+(define-method make-canvas-item ((self <canvas-ellipse>) parent)
+  (goo-canvas-ellipse-new parent 0 0 0 0))
+
+
+

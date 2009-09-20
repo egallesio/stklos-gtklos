@@ -1,0 +1,166 @@
+;;;;
+;;;; text.stk	-- GTklos Text Widget
+;;;; 
+;;;; Copyright © 2002-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 14-Feb-2002 22:24 (eg)
+;;;; Last file update: 17-Aug-2009 12:33 (eg)
+;;;;
+
+
+
+;======================================================================
+;
+;			< t e x t >   C l a s s
+;
+;======================================================================
+(define-class <text> (<gtk-widget>)
+  ((%text)		;; the real text widget
+   (text-buffer		:accessor  	text-buffer
+			:init-keyword	:text-buffer
+			:allocation	:virtual
+			:slot-ref 	(lambda (o)
+					  (let* ((w (slot-ref o '%text))
+						 (b (gtk-text-view-get-buffer w)))
+					    (cpointer-type-set! b 'gtk-buffer)
+					    b))
+			:slot-set!	(lambda (o v)
+					  (unless (and (cpointer? v)
+						       (eq? (cpointer-type v)
+							    'gtk-buffer))
+					    (error "cannot set text buffer to ~S"
+						   v))
+					  (let ((w (slot-ref o '%text)))
+					    (gtk-text-view-set-buffer w v))))
+   (border-width 	:accessor	border-width
+			:init-keyword	:border-width
+			:allocation	:gtk-property)
+   (cursor-visible	:accessor	cursor-visible
+   			:init-keyword	:cursor-visible
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (let ((w (slot-ref o '%text)))
+					    (%gtk-get-property w "cursor-visible")))
+			:slot-set! 	(lambda (o v)
+					  (let ((w (slot-ref o '%text)))
+					    (%gtk-set-property! w "cursor-visible"
+								v))))
+   (editable		:accessor	editable
+			:init-keyword	:editable
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (let ((w (slot-ref o '%text)))
+					    (%gtk-get-property w "editable")))
+			:slot-set!	(lambda (o v)
+					  (let ((w (slot-ref o '%text)))
+					    (%gtk-set-property! w "editable" v))))
+   (text-overwrite	:accessor	text-overwrite
+			:init-keyword	:text-overwrite
+
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (let ((w (slot-ref o '%text)))
+					    (%gtk-get-property w "overwrite")))
+			:slot-set!	(lambda (o v)
+					  (let ((w (slot-ref o '%text)))
+					    (%gtk-set-property! w "overwrite" v))))
+   (value		:accessor	value
+			:init-keyword	:value
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (%gtk-get-property (text-buffer o) "text"))
+			:slot-set!	(lambda (o v)
+					  (%gtk-set-property! (text-buffer o)
+							      "text"
+							      v)))))
+
+(define-method realize-widget((self <text>) initargs)
+  (let ((sw  (gtk-scrolled-window-new (void) (void)))
+	(obj (gtk-text-view-new)))
+    ;; The scrolled window
+    (cpointer-type-set! sw 'scrolled-window)
+    (slot-set! self 'wid sw)
+    (gtk-scrolled-window-set-policy sw 1 1)
+    ;; The text widget itself
+    (cpointer-type-set! obj 'gtk-text-view)
+    (slot-set! self '%text  obj)
+    ;; Add the text to the scrolled window
+    (gtk-container-add sw obj)
+    ;; Text wiget are in fixed font (FIXME)
+    (let ((fixed (pango-font-description-from-string "fixed")))
+      (gtk-widget-modify-font obj fixed)
+      (pango-font-description-free fixed))
+    ;; Show the widget
+    (gtk-widget-show obj)))
+
+
+;;;;
+;;;; Text Methods and functions
+;;;;
+
+;;
+;; File IO operations 
+;;
+(define (text-read-file txt file)
+  (let ((port (open-file file "r")))
+    (unless port
+      (error 'text-read-file "Cannot open file ~S" file))
+    (slot-set! txt
+	       'value
+	       (port->string port))
+    (close-port port)))
+
+(define (text-write-file txt file)
+  (let ((port (open-file file "w")))
+    (unless port
+      (error 'text-write-file "Cannot open file ~S" file))
+    (display (slot-ref txt 'value) port)
+    (close-port port)))
+
+
+;;
+;; Event connection
+;;
+;; because the real widget is not in the 'wid slot but in the '%text slot
+(define-method event-connect ((widget <text>) name closure)
+  ;(eprintf "widget ~S ~S ~S" widget (wid widget) (slot-ref widget '%text))
+  (%signal-connect widget (slot-ref widget '%text) name closure #f))
+
+(define-method event-connect-after ((widget <text>) name closure)
+  (%signal-connect widget (slot-ref widget '%text) name closure #t))
+
+
+;;
+;; Selection management
+;;
+(define-method text-cut-clipboard ((t <text>))
+  (gtk-text-buffer-cut-clipboard (text-buffer t)
+				 (gtk-clipboard-get 1)    ; 0 = GDK_NONE
+				 #t))
+
+(define-method text-copy-clipboard ((t <text>))
+  (gtk-text-buffer-copy-clipboard (text-buffer t)
+				  (gtk-clipboard-get 0))) ; 0 = GDK_NONE
+
+(define-method text-paste-clipboard ((t <text>))
+  (gtk-text-buffer-paste-clipboard (text-buffer t)
+				   (gtk-clipboard-get 0)  ; 0 = GDK_NONE
+				   (void)
+				   #t))

@@ -1,0 +1,105 @@
+;;;;
+;;;; fileselector.stk	-- GTKlos File Selector Widget
+;;;; 
+;;;; Copyright © 2002-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 15-Feb-2002 16:59 (eg)
+;;;; Last file update: 14-Aug-2009 20:56 (eg)
+;;;;
+
+;; BUG:
+;;   * select-multiple works, but the value returned is always the first one
+;;     and not a list
+
+
+(define-class <file-selector> (<gtk-container>)
+  ((value 	:accessor	value
+		:init-keyword	:value
+		:allocation	:virtual
+		:slot-ref	(lambda (o)
+				  (let ((v (gtk-file-chooser-get-filename
+					                      (slot-ref o 'wid))))
+				    (if (eq? v (void)) #f v)))
+		:slot-set!	(lambda (o v)
+				  (gtk-file-chooser-set-filename (slot-ref o 'wid)
+								 v)))
+   (select-multiple
+    		:accessor	select-multiple
+		:init-keyword	:select-multiple
+		:allocation	:gtk-property)
+   (show-hidden :accessor	show-hidden
+		:init-keyword	:show-hidden
+		:allocation	:gtk-property)
+   (action	:accessor	action
+		:init-keyword	:action
+		:allocation	:virtual
+		:default-value	'open
+		:slot-ref	(lambda (o)
+				  (%widget-data-get o :action 'open))
+		:slot-set!	(lambda (o v)
+				  (%widget-data-get o :action v)))))
+				  
+
+(define-method realize-widget ((self <file-selector>) initargs)
+  (let ((fs (gtk-file-chooser-widget-new (case (key-get initargs :action #f)
+					   ((open) 0)
+					   ((save) 1)
+					   ((open-dir) 2)
+					   ((create-dir) 3)
+					   (else 0)))))
+    (cpointer-type-set! fs 'file-selector)
+    (slot-set! self 'wid fs)))
+
+
+;======================================================================
+;
+;		A dialog selector for choosing files
+;
+;====================================================================== 
+(define (make-file-selector-dialog :key (title "Choose a file ...")
+				   	(select-multiple #f)
+				        (value #f))
+  (let* ((box  (make <box> :border-width 8 :expand #t :fill #t
+		           :width 520 :height 390))
+	 (fs   (make <file-selector> :parent box :select-multiple select-multiple)))
+
+;;    (g-signal-connect (wid fs)
+;;		      "file-activated"
+;;		      (lambda l
+;;			(eprintf "===> ~S\n" (slot-ref fs 'value))
+;;			(destroy box)
+;;		      #f)
+;;    (g-signal-connect (wid fs)
+;;		      "current-folder-changed"
+;;		      (lambda l
+;;			(eprintf "CHANGED ~S\n" l))
+;;		      #f)
+;;    (g-signal-connect (wid fs)
+;;		      "response"
+;;		      (lambda l
+;;		(eprintf "Response ~S\n" l))
+;;		      #f)
+;;    
+    
+    (when value        (slot-set! fs 'value value))
+
+    (make-ok-cancel-dialog title
+			   box
+			   (lambda (_) (slot-ref fs 'value)))))

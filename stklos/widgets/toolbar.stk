@@ -1,0 +1,157 @@
+;;;;
+;;;; toolbar.stk	-- GTklos Toolbars Implementation
+;;;; 
+;;;; Copyright © 2002-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date:  7-Apr-2002 14:23 (eg)
+;;;; Last file update: 14-Aug-2009 19:49 (eg)
+;;;;
+
+;; ----------------------------------------------------------------------
+;;
+;;			< t o o l b a r >   c l a s s
+;;
+;; ----------------------------------------------------------------------
+(define-class <toolbar> (<gtk-container>)
+  ((orientation   :accessor	orientation
+		  :init-keyword	:orientation
+		  :allocation	:virtual
+		  :slot-ref	(lambda (o)
+				  (let ((x (gtk-toolbar-get-orientation 
+					    (slot-ref o 'wid))))
+				    (if (zero? x) 'horizontal 'vertical)))
+		  :slot-set!	(lambda (o v)
+				  (gtk-toolbar-set-orientation
+				                   (slot-ref o 'wid)
+						   (if (eq? v 'horizontal) 0 1))))
+   (show-arrow	  :accessor	show-arrow
+		  :init-keyword	:show-arrow
+		  :allocation	:gtk-property)
+   (toolbar-style :accessor	toolbar-style
+		  :init-keyword :toolbar-style
+		  :allocation	:virtual
+		  :init-form	'both		;; since GTK lets it uninitialized !!
+		  :slot-ref	(lambda (o)
+				  (case (gtk-toolbar-get-style (slot-ref o 'wid))
+				    ((O)  'icons)
+				    ((1)  'text)
+				    ((2)  'both)
+				    (else 'both-horizontal)))
+		  :slot-set!	(lambda (o v)
+				  (let ((n (case v
+					     ((icons) 0)
+					     ((text) 1)
+					     ((both) 2)
+					     ((both-horizontal) 3)
+					     (else 2))))
+				    (gtk-toolbar-set-style (slot-ref o 'wid) n))))))
+
+
+(define-method realize-widget((self <toolbar>) initargs)
+  (let ((tb    (gtk-toolbar-new)))
+    (cpointer-type-set! tb 'toolbar)
+    (slot-set! self 'wid tb)))
+
+
+;; ----------------------------------------------------------------------
+;;
+;;		   < t o o l b a r - i t e m >   c l a s s
+;;
+;; and its two subclasses: 
+;;	<toolbar-space-item> 
+;;	<toolbar-button-item>
+;; ----------------------------------------------------------------------
+(define-class <toolbar-item> (<gtk-widget>)
+  ())
+
+(define-method container-add!((toolbar <toolbar>) (item <toolbar-item>))
+  (gtk-toolbar-insert (slot-ref toolbar 'wid) (slot-ref item 'wid) -1))
+
+
+;;;;
+;;;; 	<toolbar-space-item>
+;;;; 
+(define-class <toolbar-space-item> (<toolbar-item>)
+  ())
+
+(define-method realize-widget((self <toolbar-space-item>) initargs)
+  (let ((sep (gtk-separator-tool-item-new)))
+    (cpointer-type-set! sep 'toolbar-space-item)
+    (slot-set! self 'wid sep)))
+
+;;;;
+;;;; 	<toolbar-button-item>
+ 
+(define-class <toolbar-button-item> (<toolbar-item>)
+  ((text	:accessor	text
+		:init-keyword 	:text
+		:init-form 	""
+		:allocation	:virtual
+		:slot-ref	(lambda (o)
+				  (%gtk-get-property (slot-ref o 'wid) "label"))
+		:slot-set!	(lambda (o v)
+				  (%gtk-set-property! (slot-ref o 'wid) "label" v)))
+   (command	:accessor	command
+		:init-keyword   :command
+		:allocation	:virtual
+		:slot-ref	(%event-getter-func "clicked")
+		:slot-set!	(%event-setter-func "clicked"))
+   (stock-id	:accessor	stock-id
+		:init-keyword	:stock-id
+		:allocation	:gtk-property)
+   (image	:accessor	image
+		:init-keyword	:image
+		:allocation	:virtual
+		:slot-ref	(lambda (o)
+				  (%widget-data-get o :image #f))
+		:slot-set!	(lambda (o v)
+				  (let ((img (cond
+					       ((string? v)
+						   (make <image> :file v))
+					       ((is-a? v <image>) v)
+					       (else (error "bad image ~S" v)))))
+				    (gtk-tool-button-set-icon-widget
+				        (slot-ref o 'wid)
+					(slot-ref img 'wid)))))
+   (expand	  :accessor	expand
+		  :init-keyword :expand
+		  :allocation	:gtk-property)
+   (homogeneous	  :accessor	homogeneous
+		  :init-keyword :homogeneous
+		  :allocation	:gtk-property)))
+
+
+(define-method realize-widget((self <toolbar-button-item>) initargs)
+  (let ((but (gtk-tool-button-new (void) "")))
+    (cpointer-type-set! but 'toolbar-button-item)
+    (slot-set! self 'wid but)))
+
+
+;; ----------------------------------------------------------------------
+;;
+;; 				M i s c
+;;
+;; ----------------------------------------------------------------------
+(define-method add-toolbar-items ((tb <toolbar>) items)
+  (for-each (lambda (x)
+	      (container-add! tb (if (null? x)
+				     (make <toolbar-space-item>)
+				     (apply make <toolbar-button-item> x))))
+	    items))

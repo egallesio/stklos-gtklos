@@ -1,0 +1,12 @@
+;;; Test for ScmPkg package stklos-gtklos
+;;;
+;;;           Author: Erick Gallesio [eg@essi.fr]
+;;;    Creation date: 11-Aug-2007 12:12 (eg)
+;;; Last file update: 19-Sep-2009 20:17 (eg)
+;;;
+
+(interface stklos-gtklos-test
+  (language stklos)
+  (import stklos-gtklos stklos-gtk-base recette)
+  (export (run args)))
+

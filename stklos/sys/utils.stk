@@ -1,0 +1,166 @@
+;;;;
+;;;; utils.stk	-- Utilities
+;;;; 
+;;;; Copyright © 2007-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@essi.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@essi.fr]
+;;;;    Creation date: 23-Aug-2007 15:03 (eg)
+;;;; Last file update: 14-Aug-2009 18:11 (eg)
+;;;;
+
+
+;;/// (define *id-key* "%GTklos")	;; the key used to convert Scheme <-> GTk ids
+;;/// 
+;;/// 
+;;/// (define (diw obj)		;; wid inverse function
+;;///   (if (cpointer? obj)
+;;///       (g-object-get-data obj *id-key*)
+;;///       (error "bad pointer ~S" obj)))
+;;/// 
+;;/// (define (gtklos-wid-associate wid obj)
+;;///   (g-object-set-data wid *id-key* obj))
+;;/// 
+
+(define *table-id* '())
+
+(define (gtklos-wid-associate wid obj)
+  (set! *table-id* (cons (cons wid obj) *table-id*)))
+
+(define (diw obj)		;; wid inverse function
+  (if (cpointer? obj)
+      (let ((x (assoc obj *table-id*)))
+	(and x (cdr x)))
+      (error "bad pointer ~S" obj)))
+
+(define (diw* obj)		;; the same one trying to find a known Scheme obj
+  (let ((res (diw obj)))
+    (or res
+	(let ((parent (gtk-widget-get-parent obj)))
+	  (and (cpointer? parent) (diw* parent))))))
+
+
+
+;;// (define (gtklos-widget-set-parent! w p)
+;;//   (let ((old (gtk-widget-get-parent w)))
+;;//     ( (if (eq? old #void) gtk-widget-set-parent gtk-widget-reparent) w p)))
+
+
+;; ======================================================================
+;;
+;; 	GTK+ width & height
+;;
+;; ======================================================================
+(define (gtklos-width w)
+  (car (%gtk-get-size (slot-ref w 'wid))))
+
+(define (gtklos-height w)
+  (cdr (%gtk-get-size (slot-ref w 'wid))))
+  
+
+;; ----------------------------------------------------------------------
+
+(define (gtklos-slot-is-ro slot)
+  (lambda (o v)
+    (error "slot `~S' is read-only in ~S" slot o)))
+
+;;(define (gtklos-slot-is-init-only name)
+;;  (let ((keyword (make-keyword name)))
+;;    (lambda (o v)
+;;      (when (slot-bound? o name)
+;;	(error "slot `~S' is read-only in ~S" name o))
+;;      ;; This is the init form. Do the initialization
+;;      (%widget-data-set! o keyword v))))
+
+
+;; ======================================================================
+;;
+;; 	GTK+ thread management
+;;
+;; ======================================================================
+(define *gtk-freeze* #f)
+(define *gtk-freeze-mutex* (make-mutex 'gtk-freeze))
+
+(define (with-gtk-freezed proc)
+  (with-mutex *gtk-freeze-mutex*
+	      (lambda ()
+		(set! *gtk-freeze* #t)
+		(proc)
+		(set! *gtk-freeze* #f))))
+
+
+;;//(define (gtk-freeze)
+;;//  (mutex-lock! *gtk-freeze-mutex*)
+;;//  (set! *gtk-freeze* #t)
+;;//  (eprintf "FIN\n"))
+;;//  
+;;//
+;;//
+;;//(define (gtk-unfreeze)
+;;//  (eprintf "UN1\n")
+;;//  (set! *gtk-freeze* #f)
+;;//  (eprintf "UN2\n")
+;;//  (mutex-unlock! *gtk-freeze-mutex*)
+;;//  (eprintf "UN3\n")
+;;//  )
+ 
+
+
+
+;;//(define *postponed-actions* '())
+;;//(define *postponed-actions-mutex* (make-mutex 'postponed-actions))
+;;//
+;;//(define (gtk-postpone-action-add proc)
+;;//  (mutex-lock! *postponed-actions-mutex*)
+;;//  (set! *postponed-actions* (append! *postponed-actions* (list proc)))
+;;//  (mutex-unlock! *postponed-actions-mutex*))
+;;//
+;;//(define (gtk-run-postponed-actions)
+;;//  (mutex-lock! *postponed-actions-mutex*)
+;;//  ;(eprintf "Postpone ~S\n" *postponed-actions*)
+;;//  (let Loop ((lst *postponed-actions*))
+;;//    (when (pair? lst)
+;;//      (eprintf "Action postponed ~S\n" (car lst))
+;;//      (apply (car lst))
+;;//      (Loop (cdr lst))))
+;;//  (set! *postponed-actions* '())
+;;//  (mutex-unlock! *postponed-actions-mutex*))
+;;//
+
+
+(define (start-gtk-thread)
+  (let ((thr (make-thread (lambda ()
+			    (let Loop ()
+;;			      (with-mutex *gtk-freeze-mutex*
+;;				(eprintf "~S" *gtk-freeze*)
+;;				(unless *gtk-freeze*
+;;				  (gtk-main-iteration-do #f)))
+			      (if (gtk-events-pending)
+				  (gtk-main-iteration-do #f)
+				  (sleep 500))
+			      (Loop))
+			    (eprintf "End of GTK+ thread\n")))))
+    (thread-start! thr)))
+
+
+(define (start-interactive-gtk)
+  (port-idle-register! (current-input-port)
+		       (lambda () (gtk-main-iteration-do #f))))
+
+(gtk-init (void) (void))
+(start-interactive-gtk)

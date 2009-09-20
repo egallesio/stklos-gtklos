@@ -1,0 +1,98 @@
+;;;;
+;;;; gauge.stk					-- GTK+ Gauge Widget
+;;;; 
+;;;; Copyright © 2001-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 30-Jul-2001 07:57 (eg)
+;;;; Last file update: 28-Jun-2009 17:49 (eg)
+;;;;
+
+
+;======================================================================
+;
+;			     < G a u g e >
+;
+;======================================================================
+
+(define-class <gauge> (<gtk-widget>)
+  ((orientation		:accessor	orientation
+			:init-keyword	:orientation
+			:allocation	:virtual
+			:slot-ref
+			(lambda (o)
+			  (let* ((w (slot-ref o 'wid))
+				 (v (gtk-progress-bar-get-orientation w)))
+			    (case v
+			      ((O)  'left-to-right)
+			      ((1)  'right-to-left)
+			      ((2)  'bottom-to-top)
+			      (else 'top-to-bottom))))
+			:slot-set!
+			(lambda (o v)
+			  (let ((w (slot-ref o 'wid))
+				(new (case v
+				       ((left-to-right) 0)
+				       ((right-to-left) 1)
+				       ((bottom-to-top) 2)
+				       (else            3))))
+			    (gtk-progress-bar-set-orientation w new))))
+   (style		:accessor	style
+			:init-keyword	:style
+			:allocation	:virtual
+			:slot-ref	(lambda (o)
+					  (%widget-data-get o :g_style 'continuous))
+			:slot-set!	(lambda (o v)
+					  (let ((val (case v
+						       ((continuous) 0)
+						       ((discrete)   1)
+						       (else (error
+							      "bad value for style ~S"
+							      v)))))
+					    (gtk-progress-bar-set-bar-style (wid o)
+									    val)
+					    (%widget-data-set! o :g_style v))))
+
+   (draw-value		:accessor	draw-value
+			:init-keyword	:draw-value
+			:allocation	:gtk-property
+			:gtk-name	"show-text")
+   (activity-mode	:accessor	activity-mode
+			:init-keyword	:activity_mode
+			:allocation	:gtk-property)
+   (discrete-blocks	:accessor	discrete-blocks
+			:init-keyword	:discrete-blocks
+			:allocation	:gtk-property)
+   (value		:accessor	value
+			:init-keyword	:value
+			:allocation	:gtk-property
+			:gtk-name	"fraction")
+   (text		:accessor	text
+			:init-keyword	:text
+			:allocation	:gtk-property)
+
+   ))
+
+(define-method realize-widget((self <gauge>) initargs)
+  (let ((wid (gtk-progress-bar-new)))
+    (cpointer-type-set! wid 'gtk-gauge)
+    (slot-set! self 'wid wid)))
+
+(define-method gauge-pulse ((self <gauge>))
+  (gtk-progress-bar-pulse (wid self)))

@@ -1,0 +1,86 @@
+;;;;
+;;;; scroll2.stk	-- GTklos Scroll Widget Demo
+;;;; 
+;;;; Copyright © 2002-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 11-Feb-2002 16:05 (eg)
+;;;; Last file update: 10-Aug-2009 16:46 (eg)
+;;;;
+
+(include "gtklos-demo.stk")
+
+(define demo-msg "
+Another Scroll Demo
+
+This is a demo showing a scrollable window containing
+a bunch of buttons.
+Scrollbars position and behavior can be controlled with the
+radio buttons located at the top of this window.
+")
+
+(define (main args)
+  (let* ((win    (make <demo-window> :title "Scroll Demo" 
+		       :file "scroll2" :border-width 5 :message demo-msg
+		       :expand #t :fill #t :height 600 :width 500))
+	 (layout (make <grid> :parent win :columns 2 :rows 4 :border-width 4))
+	 (scroll (make <scroll>))
+	 (grid   (make <grid> :parent scroll
+		       :columns 6 :row-spacing 5 :column-spacing 5))
+	 (r1     (make <radio-button> 
+		       :title "Vertical Scroll"
+		       :texts '("left" "right" "none")
+		       :value "right"
+		       :command (lambda (e)
+				  (let ((txt (text (event-widget e))))
+				    (if (equal? txt "none")
+					(slot-set! scroll 'vpolicy 'never)
+					(begin
+					  (slot-set! scroll 'vpolicy 'always)
+					  (slot-set! scroll 'vside
+						     (if (equal? txt "left")
+							 'left
+							 'right))))))))
+	 (r2     (make <radio-button> 
+		       :title "Horizontal Scroll"
+		       :texts '("top" "bottom" "none")
+		       :value "bottom"
+		       :command (lambda (e)
+				  (let ((txt (text (event-widget e))))
+				    (if (equal? txt "none")
+					(slot-set! scroll 'hpolicy 'never)
+					(begin
+					  (slot-set! scroll 'hpolicy 'always)
+					  (slot-set! scroll 'hside
+						     (if (equal? txt "bottom")
+							 'bottom
+							 'top)))))))))
+
+    ;; No parenting was done before.
+    ;; Place the radios on the top and the scroll below
+    (container-add! layout r1 :fill 'x :expand-x #t :expand-y #f)
+    (container-add! layout r2 :fill 'x :expand-x #t :expand-y #f)
+    (container-add! layout scroll :width 2 :height 3 :pad-y 10)
+    
+    ;; Build a set of  buttons in the scroll
+    (dotimes (i 120)
+      (make <button> :text (format #f "Button #~A" i) :parent grid
+	    :command (lambda (e)
+		       (format #t "You have clicked on button #~A\n" i))))
+    (gtk-main)))

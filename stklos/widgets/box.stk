@@ -1,0 +1,136 @@
+;;;;
+;;;; box.stk	-- Vertical and Horizontal GTk Boxes
+;;;; 
+;;;; Copyright © 2001-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 25-May-2001 15:44 (eg)
+;;;; Last file update: 11-Aug-2009 00:24 (eg)
+;;;;
+
+
+;======================================================================
+;
+;	              C l a s s    < b o x >
+;
+;====================================================================== 
+(define-class <box> (<gtk-container> <gtk-widget>)
+  ((expand	  :accessor	expand
+		  :init-keyword :expand
+		  :init-form	#f)
+   (fill	  :accessor	fill
+		  :init-keyword :fill
+		  :init-form	#f)
+   (padding	  :accessor	padding
+		  :init-keyword	:padding
+		  :init-form	0)
+   (homogeneous	  :accessor	homogeneous
+		  :init-keyword	:homogeneous
+		  :allocation	:gtk-property)
+   (spacing	  :accessor	spacing
+		  :init-keyword :spacing
+		  :allocation   :gtk-property
+		  :init-form	0)
+   (orientation	  :getter	orientation
+		  :allocation	:virtual
+		  :slot-ref	(lambda (o)
+				  (let ((type (cpointer-type (wid o))))
+				    (if (eq? type 'gtk-hbox)
+					'horizontal
+					'vertical)))
+		 :slot-set!	(gtklos-slot-is-ro 'orientation))))
+
+;;;;
+;;;; Methods for Boxes
+;;;; 
+(define-method container-add! ((cont <box>) widget
+			       :key (expand  (slot-ref cont 'expand))
+			       	    (fill    (slot-ref cont 'fill))
+				    (padding (slot-ref cont 'padding))
+				    (end     #f))
+  (let ((c    (slot-ref cont   'wid))
+	(w    (slot-ref widget 'wid))
+	(func (if end gtk-box-pack-end gtk-box-pack-start)))
+    (func c w expand fill padding)))
+
+
+(define-method realize-widget ((self <box>) initargs)
+  (let* ((o (key-get initargs :orientation 'vertical))
+	 (b (case o
+	      ((horizontal) (gtk-hbox-new #f 0))
+	      ((vertical)   (gtk-vbox-new #f 0))
+	      (else 	   (error "bad box orientation ~S" o)))))
+    (cpointer-type-set! b (if (eq? o 'vertical) 'gtk-vbox 'gtk-hbox))
+    (slot-set! self 'wid b)))
+
+
+;;//(define-method %container-place ((cont <box>) widget 
+;;//				 :key (expand  #t expand?)
+;;//				      (fill    #t fill?)
+;;//				      (padding 0  padding?))
+;;// (let ((c (slot-ref cont   'wid))
+;;//       (w (slot-ref widget 'wid)))
+;;//   (when expand?  (%child-set! c w :expand  expand))
+;;//   (when padding? (%child-set! c w :padding padding))
+;;//   (when fill?	  (%child-set! c w :fill    fill)))
+;;// (void))
+
+
+;; ======================================================================
+;;
+;; 			C O N T A I N E R - I N F O
+;;
+;; ======================================================================
+(define-method %container-info ((parent <box>) widget)
+  (let* ((w (wid widget))
+	 (c (wid parent))
+	 (i (gtk-box-query-child-packing c w)))
+    (list :parent  parent
+ 	  :expand  (car i)
+	  :fill	   (cadr i)
+	  :padding (caddr i)
+	  :end	   (cadddr i))))
+
+
+;======================================================================
+;
+;	              C l a s s    < h b o x >
+;
+;====================================================================== 
+(define-class <hbox> (<box>)
+  ())
+
+(define-method realize-widget ((self <hbox>) initargs)
+  (let ((h (gtk-hbox-new #f 0)))
+    (cpointer-type-set! h 'gtk-hbox)
+    (slot-set! self 'wid h)))
+
+;======================================================================
+;
+;	              C l a s s    < v b o x >
+;
+;====================================================================== 
+(define-class <vbox> (<box>)
+  ())
+
+(define-method realize-widget ((self <vbox>) initargs)
+  (let ((v (gtk-vbox-new #f 0)))
+    (cpointer-type-set! v 'gtk-vbox)
+    (slot-set! self 'wid v)))
+

@@ -1,0 +1,64 @@
+;;;;
+;;;; stklos-gtklos.stk	-- GTklos package
+;;;; 
+;;;; Copyright © 2007-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@essi.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@essi.fr]
+;;;;    Creation date:  7-Aug-2007 18:33 (eg)
+;;;; Last file update: 20-Sep-2009 00:07 (eg)
+;;;;
+
+(include "sys/utils.stk")
+(include "sys/meta.stk")
+(include "sys/widget.stk")
+(include "sys/container.stk")
+(include "sys/event.stk")
+;;// (include "sys/layout.stk")
+
+(include "widgets/box.stk")
+(include "widgets/button.stk")
+(include "widgets/checkbutton.stk")
+(include "widgets/combobox.stk")
+(include "widgets/entry.stk")
+(include "widgets/frame.stk")
+(include "widgets/gauge.stk")
+(include "widgets/grid.stk")
+(include "widgets/label.stk")
+(include "widgets/separator.stk")
+(include "widgets/text.stk")
+(include "widgets/toolbar.stk")
+(include "widgets/window.stk")
+(include "widgets/radiobutton.stk")
+(include "widgets/image.stk")
+(include "widgets/scale.stk")
+(include "widgets/scroll.stk")
+(include "widgets/handle.stk")
+(include "widgets/menu.stk")
+
+;; Dialogs 
+(include "dialogs/dialog.stk")
+(include "dialogs/fontselector.stk")
+(include "dialogs/colorselector.stk")
+(include "dialogs/fileselector.stk")
+
+
+;; Canvas
+(include "canvas/canvas.stk")
+(include "canvas/canvas-item.stk")
+

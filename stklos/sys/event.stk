@@ -1,0 +1,106 @@
+;;;;
+;;;; event.stk					-- GTK Events Management
+;;;; 
+;;;; Copyright © 2001-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 31-May-2001 18:36 (eg)
+;;;; Last file update: 11-Aug-2009 00:23 (eg)
+;;;;
+
+
+
+(define (%event-getter-func name)
+  (let ((key (make-keyword name)))
+    (lambda (o)
+      (key-get (slot-ref o '%event) key #f))))
+
+
+(define (%event-setter-func name)
+  (let ((key (make-keyword name)))
+    (lambda (o v)
+      (let ((new (lambda _ (v (new-gtk-event)))))
+	(slot-set! o '%event (key-set! (slot-ref o '%event) key new))
+	(g-signal-connect (slot-ref o 'wid) name new (void))))))
+
+
+(define (%signal-connect widget wid name closure after)
+  (let ((key     (make-keyword name))
+	(new     (lambda _ (closure (new-gtk-event))))
+	(connect (if after g-signal-connect-after g-signal-connect)))
+    (slot-set! widget '%event (key-set! (slot-ref widget '%event) key new))
+    (connect wid name new (void))))
+
+; ======================================================================
+
+(define-struct gtk-event obj)
+
+(define (new-gtk-event)
+  (let ((ev (gtk-get-current-event)))
+    (if (eq? ev #void)
+	#f
+	(make-gtk-event ev))))
+
+(define (event-widget e)
+  (if (gtk-event? e)
+      (diw (gtk-get-event-widget (gtk-event-obj e)))
+      (error "bad event ~S" e)))
+
+(define (event-type e)
+  (if (gtk-event? e)
+      (%event-type (gtk-event-obj e))
+      (error "bad event ~S" e)))
+
+(define (event-x e)
+  (if (gtk-event? e)
+      (%event-x (gtk-event-obj e))
+      (error "bad event ~S" e)))
+
+(define (event-y e)
+  (if (gtk-event? e)
+      (%event-y (gtk-event-obj e))
+      (error "bad event ~S" e)))
+
+(define (event-char e)
+  (if (gtk-event? e)
+      (%event-char (gtk-event-obj e))
+      (error "bad event ~S" e)))
+
+(define (event-modifiers e)
+  (if (gtk-event? e)
+      (%event-modifiers (gtk-event-obj e))
+      (error "bad event ~S" e)))
+
+(define (event-button e)
+  (if (gtk-event? e)
+      (%event-button (gtk-event-obj e))
+      (error "bad event ~S" e)))
+
+
+(define (event-describe e)
+  (eprintf "event description ~S\n" e)
+  (eprintf "\t   widget: ~S\n" (event-widget e))
+  (eprintf "\t     type: ~S\n" (event-type e))
+  (eprintf "\t   button: ~S\n" (event-button e))
+  (eprintf "\tmodifiers: ~S\n" (event-modifiers e))
+  (eprintf "\t     char: ~S\n" (event-char e))
+  (eprintf "\t        x: ~S\n" (event-x e))
+  (eprintf "\t        y: ~S\n" (event-y e)))
+
+

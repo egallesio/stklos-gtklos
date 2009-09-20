@@ -1,0 +1,136 @@
+;;;;
+;;;; dialog.stk					-- GTKlos Dialogs
+;;;; 
+;;;; Copyright © 2002-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 15-Feb-2002 16:39 (eg)
+;;;; Last file update: 14-Jul-2009 00:07 (eg)
+;;;;
+
+
+(define-class <dialog> (<window>)
+  ())
+
+
+(define-method realize-widget ((self <dialog>) initargs)
+  (let ((dlg (gtk-dialog-new)))
+    (cpointer-type-set! dlg 'dialog)
+    (slot-set! self 'wid dlg)
+    dlg))
+  
+
+;; ======================================================================
+;;
+;; make-simple-dialog
+;;
+;; ======================================================================
+(define (make-simple-dialog title widget :optional (buttons '(ok cancel)))
+  ;; Create dialog box and add it buttons
+  (let ((dialog (gtk-dialog-new)))
+    (gtk-window-set-title dialog title)
+    ;; Create buttons
+    (let ((value 0))
+      (for-each (lambda (x)
+		  (gtk-dialog-add-button dialog (format "gtk-~a" x) value)
+		  (set! value (+ value 1)))
+		buttons))
+
+    ;; Add user widget to the dialog
+    (let ((content (%dialog-vbox dialog)))
+      (gtk-container-add content (wid widget))
+      (gtk-widget-show-all dialog))
+    
+    ;; Run dialog
+    (let* ((dlg (gtk-dialog-run dialog))
+	   (res (if (>= dlg 0)
+		    (list-ref buttons dlg)
+		    #f)))
+      ;(gtk-widget-destroy dialog)
+      (values res dialog))))
+
+;; ======================================================================
+;;
+;; make-ok-cancel-dialog
+;;
+;; ======================================================================
+(define (make-ok-cancel-dialog title widget action)
+  (receive (res dialog) (make-simple-dialog title widget)
+     (let ((final-res (and (eq? res 'ok) (action widget))))
+       (gtk-widget-destroy dialog)
+       final-res)))
+      
+
+;; ======================================================================
+;;
+;; make-simple-message-dialog
+;;
+;; ======================================================================
+
+;; Type enum GtkDialogFlags
+(define |GTK_DIALOG_MODAL| 			1)
+(define |GTK_DIALOG_DESTROY_WITH_PARENT| 	2)
+(define |GTK_DIALOG_NO_SEPARATOR|		4)
+
+;; Type enum GtkMessageType
+(define |GTK_MESSAGE_INFO|			0)
+(define |GTK_MESSAGE_WARNING|   		1)
+(define |GTK_MESSAGE_QUESTION|  		2)
+(define |GTK_MESSAGE_ERROR|     		3)
+(define |GTK_MESSAGE_OTHER|     		4)
+
+;; Type enum GtkButtonsType
+(define |GTK_BUTTONS_NONE| 			0)
+(define |GTK_BUTTONS_OK| 			1)
+(define |GTK_BUTTONS_CLOSE| 			2)
+(define |GTK_BUTTONS_CANCEL| 			3)
+(define |GTK_BUTTONS_YES_NO| 			4)
+(define |GTK_BUTTONS_OK_CANCEL| 		5)
+
+;; make-simple-message-dialog
+(define (make-simple-message-dialog title type message
+				    :optional (buttons '(ok cancel)))
+  (let* ((type   (case type
+		   ((info)     |GTK_MESSAGE_INFO|)
+		   ((warning)  |GTK_MESSAGE_WARNING|)
+		   ((question) |GTK_MESSAGE_QUESTION|)
+		   ((error)    |GTK_MESSAGE_ERROR|)
+		   (else       |GTK_MESSAGE_OTHER|)))
+	 (dialog (gtk-message-dialog-new-with-markup
+		                    (void)
+				    (+ |GTK_DIALOG_MODAL|
+				       |GTK_DIALOG_DESTROY_WITH_PARENT|)
+				    type
+				    |GTK_BUTTONS_NONE|
+				    message)))
+    ;; Set title
+    (gtk-window-set-title dialog title)
+    ;; Create buttons
+    (let ((value 0))
+      (for-each (lambda (x)
+		  (gtk-dialog-add-button dialog (format "gtk-~a" x) value)
+		  (set! value (+ value 1)))
+		buttons))
+    ;; Run dialog
+    (let* ((dlg (gtk-dialog-run dialog))
+	   (res (if (>= dlg 0)
+		    (list-ref buttons dlg)
+		    #f)))
+      (gtk-widget-destroy dialog)
+      res)))

@@ -1,0 +1,89 @@
+#
+# Makefile.in	-- Makefile for Gtklos
+# 
+# Copyright © 2007-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@essi.fr>
+# 
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+# USA.
+# 
+#           Author: Erick Gallesio [eg@essi.fr]
+#    Creation date: 10-Aug-2007 19:37 (eg)
+# Last file update: 19-Sep-2009 21:28 (eg)
+#
+
+
+# ======================================================================
+# Generic Rules 
+# ======================================================================
+DIST=@DIST@
+CFLAGS=@CFLAGS@ `pkg-config --cflags gtk+-2.0`
+LDFLAGS=@LDFLAGS@ `pkg-config --libs gtk+-2.0` @LIBS@
+VERSION=@VERSION@
+PACKAGE=@PACKAGE@
+HG_URL=@HG_URL@
+SO=@SO@
+
+%.$(SO) : %.o
+	@LOAD@ $*.$(SO)  $(LDFLAGS) $<
+
+%.o: %.c
+	@COMP@ $(CFLAGS) -c $<
+
+%.ostk: %.stk
+	stklos-compile -o $*.ostk $<
+
+%.ostk: %.scm
+	stklos-compile -o $*.ostk $<
+
+######################################################################
+all: objs examples copy
+
+copy: 
+	cp $(PACKAGE).$(SO) ../..
+
+clean: clean-specific
+	rm -f *~ $(SOBJ) $(OBJ) $(OSTK)
+
+install: 
+
+version: distclean 
+
+distclean: clean
+	/bin/rm -rf config.log config.status Makefile autom4te.cache
+	/bin/rm -f ../../$(PACKAGE).$(SO)
+
+# ======================================================================
+# Specific Rules 
+# ======================================================================
+SOBJ = stklos-gtklos.@SO@
+OBJ  = stklos-gtklos.o
+OSTK = 
+STK= $(wildcard sys/*.stk) $(wildcard widgets/*.stk) $(wildcard dialogs/*.stk) \
+     $(wildcard canvas/*.stk)
+
+objs: $(SOBJ) $(OSTK)
+
+stklos-gtklos.o: stklos-gtklos-inc.c stklos-gtklos.c
+
+stklos-gtklos-inc.c: stklos-gtklos.spi stklos-gtklos.stk $(STK)
+	stklos-compile -C -o stklos-gtklos-inc.c stklos-gtklos.spi
+
+clean-specific:
+	(cd examples; make clean)
+	rm -f stklos-gtklos-inc.c
+
+examples: 
+	(cd examples; make all)

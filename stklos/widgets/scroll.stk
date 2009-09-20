@@ -1,0 +1,132 @@
+;;;;
+;;;; scroll.stk				-- GTklos Scrolled Windows
+;;;; 
+;;;; Copyright © 2002-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; 
+;;;; 
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+;;;; 
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;; 
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; USA.
+;;;; 
+;;;;           Author: Erick Gallesio [eg@unice.fr]
+;;;;    Creation date: 18-Jan-2002 08:56 (eg)
+;;;; Last file update: 10-Aug-2009 16:48 (eg)
+;;;;
+
+;;;
+;;; scrollbar policy
+;;;
+(define (%get-policy vertical?)
+  (let ((name (format "~ascrollbar-policy" (if vertical? #\v #\h))))
+    (lambda (o)
+      (let ((v (%gtk-get-property (slot-ref o 'wid) name)))
+	(case v
+	  ((0)	'always)
+	  ((1)	'automatic)
+	  ((2)	'never))))))
+
+(define (%set-policy! vertical?)
+  (let ((name (format "~ascrollbar-policy" (if vertical? #\v #\h))))
+    (lambda (o v)
+      (let ((v (case v
+		 ((always)   0)
+		 ((automatic) 1)
+		 ((never)     2)
+		 (else (error "bad ~a policy: ~s"
+			      (if vertical? "vertical" "horizontal")
+			      v)))))
+	(%gtk-set-property! (slot-ref o 'wid) name v)))))
+	   
+;;;
+;;; scrollbar placement
+;;;
+(define (%hside o)
+  (let ((place (%gtk-get-property (slot-ref o 'wid) "window-placement")))
+    (case place
+      ((0 2) 'bottom)			; top-left top-right
+      (else  'top))))
+
+(define (%vside o)
+  (let ((place (%gtk-get-property (slot-ref o 'wid) "window-placement")))
+    (case place
+      ((0 1) 'right)			; top-left bottom-left
+      (else 'left))))
+
+(define (%hside! o v)
+  (let ((where (case v
+		 ((top)     (if (eq? (%vside o) 'left)
+				3 			; bottom-right
+				1))			; bottom-left
+		 ((bottom)  (if (eq? (%vside o) 'left)
+				2			; top-right
+				0))			; top-left
+		 (else      (error 'hside "bad horizontal position ~S" v)))))
+    (%gtk-set-property! (slot-ref o 'wid) "window-placement" where)))
+
+
+(define (%vside! o v)
+  (let ((where (case v
+		 ((left)  (if (eq? (%hside o) 'top)
+			      3				; bottom-right
+			      2))			; top-right
+		 ((right) (if (eq? (%hside o) 'top)
+			      1				; bottom-left
+			      0))			; top-left
+		 (else    (error 'vside "bad vertical position ~S" v)))))
+    (%gtk-set-property! (slot-ref o 'wid) "window-placement" where)))
+
+
+;======================================================================
+;
+;		       	C l a s s   < s c r o l l  >
+;
+;====================================================================== 
+(define-class <scroll> (<gtk-container>)
+  ((hpolicy	:accessor 	hpolicy
+		:init-keyword	:hpolicy
+		:allocation	:virtual
+		:slot-ref	(%get-policy #f)
+		:slot-set!	(%set-policy! #f))
+   (vpolicy	:accessor 	vpolicy
+		:init-keyword	:vpolicy
+		:allocation	:virtual
+		:slot-ref	(%get-policy #t)
+		:slot-set!	(%set-policy! #t))
+   (hside	:accessor	hside
+		:init-keyword	:hside
+		:allocation	:virtual
+		:slot-ref	%hside
+		:slot-set!	%hside!)
+   (vside	:accessor	vside
+		:init-keyword	:vside
+		:allocation	:virtual
+		:slot-ref	%vside
+		:slot-set!	%vside!)))
+
+
+(define-method container-add! ((self <scroll>) child . args)
+  (gtk-scrolled-window-add-with-viewport (slot-ref self  'wid)
+					 (slot-ref child 'wid)))
+
+(define-method realize-widget ((self <scroll>) initargs)
+  (let ((s (gtk-scrolled-window-new (void) (void))))
+    (cpointer-type-set! s 'gtk-scroll)
+    (slot-set! self 'wid s)
+    ;; Indicates that we manage ourselves window placement with the
+    ;; "window-placement" property. 
+    (%gtk-set-property! s "window-placement-set" #t)))
+
+
+	
+    
