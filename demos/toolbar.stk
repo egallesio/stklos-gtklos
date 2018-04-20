@@ -75,11 +75,11 @@ its appearance.
 
     ;; Populate the toolbar
     (add-toolbar-items tb `(
-	(:text "Up"    :image "images/up.png"    :command (tb-callback "Up"))
-	(:text "Down"  :image "images/down.png"  :command (tb-callback "Down"))
+	(:text "Up"    :image "images/up.png"    :command ,(tb-callback "Up"))
+	(:text "Down"  :image "images/down.png"  :command ,(tb-callback "Down"))
 	()   ; a space (by convention)
-	(:text "Left"  :image "images/left.png"  :command (tb-callback "Left")
+	(:text "Left"  :image "images/left.png"  :command ,(tb-callback "Left")
 	 :tooltip "Go Left")
-	(:text "Right" :image "images/right.png" :command (tb-callback "Right")
+	(:text "Right" :image "images/right.png" :command ,(tb-callback "Right")
 	 :tooltip "Go Right")))
     (gtk-main)))

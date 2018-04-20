@@ -1,27 +1,28 @@
+;;;;                                            -*- coding: utf-8 -*-
 ;;;;
-;;;; stklos-gtklos.spi	-- GTklos package
-;;;; 
-;;;; Copyright © 2007-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@essi.fr>
-;;;; 
-;;;; 
+;;;; stklos-gtklos.spi  -- GTklos package
+;;;;
+;;;; Copyright Â© 2007-2018 Erick Gallesio - I3S-CNRS/ESSI <eg@essi.fr>
+;;;;
+;;;;
 ;;;; This program is free software; you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
 ;;;; the Free Software Foundation; either version 2 of the License, or
 ;;;; (at your option) any later version.
-;;;; 
+;;;;
 ;;;; This program is distributed in the hope that it will be useful,
 ;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;; GNU General Public License for more details.
-;;;; 
+;;;;
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program; if not, write to the Free Software
-;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, 
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
 ;;;; USA.
-;;;; 
+;;;;
 ;;;;           Author: Erick Gallesio [eg@essi.fr]
 ;;;;    Creation date:  7-Aug-2007 18:33 (eg)
-;;;; Last file update: 19-Sep-2009 20:11 (eg)
+;;;; Last file update: 19-Apr-2018 18:52 (eg)
 ;;;;
 
 (interface stklos-gtklos
@@ -32,14 +33,14 @@
      timeout
      when-idle
      kill-idle
-     
+
      ;; utils.stk
      gtklos-slot-is-ro
      gtklos-slot-is-init-only
      start-gtk-thread
      gtklos-width
      gtklos-height
-     
+
      ;; event.stk
      event-widget
      event-type
@@ -52,7 +53,7 @@
      event-describe
      event-connect
      event-connect-after
-     
+
      ;; widget.stk
      wid
      show
@@ -87,22 +88,22 @@
      column-spacing
      row-spacing
      homogeneous
-     
-     
+
+
      ;; layout.stk
      layout
      expand
      fill
      border-width
      padding
-     
+
      ;; window.stk
      <window>
      transient
      title
      resizable
      modal
-     
+
      ;; box.stk
      <hbox>
      <vbox>
@@ -131,7 +132,7 @@
      ;; radiobutton.stk
      <radio-button>
      texts
-     
+
      ;; checkbutton.stk
      <check-button>
      value
@@ -145,7 +146,7 @@
      <frame>
      title-justify
      shadow
-     
+
      ;; separator.stk
      <separator>
 
@@ -155,7 +156,7 @@
      text-visibility
      value
      cursor-position
-     
+
      ;; text.stk
      <text>
      text-buffer
@@ -175,7 +176,7 @@
 
      ;; handle.stk
      <handle-window>
-     
+
      ;; toolbar.stk
      <toolbar>
      orientation
@@ -186,7 +187,7 @@
      items
      stock-id
      add-toolbar-items
-     
+
      ;; gauge
      <gauge>
      orientation
@@ -197,7 +198,7 @@
      text
      gauge-pulse
      style
-     
+
      ;; scale
      <scale>
      <hscale>
@@ -224,7 +225,7 @@
      padding
 
      <menu>
-     
+
      <menu-item>
      text
      right-justified
@@ -242,7 +243,7 @@
      sibling
 
      add-menubar-items
-     
+
      ;; widget.stk
      xalign
      yalign
@@ -254,7 +255,7 @@
      make-ok-cancel-dialog
      make-simple-dialog
      make-simple-message-dialog
-     
+
      ;; fontselector
      <font-selector>
      preview-text
@@ -332,7 +333,7 @@
      start-arrow
 
      <canvas-polygon>
-     
+
      <canvas-path>
      value
 
@@ -342,3 +343,4 @@
      radius-x
      radius-y
      ))
+

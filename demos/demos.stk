@@ -1,7 +1,7 @@
 ;;;;
 ;;;; demos.stk	-- Run all the STklos demos
 ;;;; 
-;;;; Copyright © 2009 Erick Gallesio - Polytech'Nice-Sophia <eg@unice.fr>
+;;;; Copyright © 2009-2010 Erick Gallesio - Polytech'Nice-Sophia <eg@unice.fr>
 ;;;; 
 ;;;; 
 ;;;; This program is free software; you can redistribute it and/or modify
@@ -21,19 +21,10 @@
 ;;;; 
 ;;;;           Author: Erick Gallesio [eg@unice.fr]
 ;;;;    Creation date: 19-Sep-2009 20:45 (eg)
-;;;; Last file update: 20-Sep-2009 00:20 (eg)
+;;;; Last file update: 24-Oct-2010 12:47 (eg)
 ;;;;
 
-
-;;;; Change the load-path
-(let ((path (load-path)))
-  (unless (member ".." path)
-    (load-path (cons ".." path))))
-
-;;; load GTklos
-(require/provide "stklos-gtklos")
-(import stklos-gtklos stklos-gtk-base)
-
+(include "gtklos-demo.stk")
 
 (define all (with-input-from-file "all-demos"
 	      (lambda ()
@@ -55,7 +46,11 @@
 		  ;; This is a demo file name
 		  (make <button> :text (symbol->string x) :parent grid
 			:command (lambda (e)
-				   (system (format "./~A &"x))))))
+				   (system (format "unset indemo; ./~A &"x))))))
 	      all)
+
+    ;; Connect a signal to terminate application when the window is closed
+    (event-connect win "delete-event" (lambda (_) (exit 0)))
+    
     ;; GTk starts
     (gtk-main)))

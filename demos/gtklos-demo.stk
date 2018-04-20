@@ -2,7 +2,7 @@
 ;;;; gtklos-demo.stk	-- Definition of things which are useful
 ;;;;			   for GTKlos demonstrations
 ;;;; 
-;;;; Copyright © 2001-2009 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
+;;;; Copyright © 2001-2010 Erick Gallesio - I3S-CNRS/ESSI <eg@unice.fr>
 ;;;; 
 ;;;; 
 ;;;; This program is free software; you can redistribute it and/or modify
@@ -22,17 +22,21 @@
 ;;;; 
 ;;;;           Author: Erick Gallesio [eg@unice.fr]
 ;;;;    Creation date: 24-Jul-2001 16:19 (eg)
-;;;; Last file update: 20-Sep-2009 00:21 (eg)
+;;;; Last file update: 23-Oct-2010 20:40 (eg)
 ;;;;
 
 
-;;;; Change the load-path
+;;;; Change the load-path. The complexity of the multiple ways that demos can
+;;;; be tested (directly, from a stklos-pkg invocation with or without installation
+;;;; of dependencies ....)
 (let ((path (load-path)))
-  (unless (member ".." path)
-    (load-path (cons ".." path))))
+  (unless (member "../.." path)
+    (load-path (append '("../.."  ".." "../stklos")
+		       path))))
+
 
 ;;; load GTklos
-(require/provide "stklos-gtklos")
+(require/provide "stklos-gtklos.so")
 (import stklos-gtklos stklos-gtk-base)
 
 
@@ -64,8 +68,6 @@
     (load tmp)
     (main #f)
     (remove-file tmp)))
-
- 
 
 (define-method demo-see-code (file)
   (let* ((win (make <window> :title (format #f "Code of the ~S Demo" file)))
